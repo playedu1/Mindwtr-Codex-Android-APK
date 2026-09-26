@@ -1,6 +1,13 @@
 name: Mindwtr Codex Android APK
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/codex-android-apk.yml
+      - apps/mobile/**
+      - packages/core/**
+      - bun.lock
   workflow_dispatch:
 
 permissions:
