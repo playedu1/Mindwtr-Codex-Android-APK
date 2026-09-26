@@ -335,6 +335,8 @@ vi.mock('@/hooks/use-theme-colors', () => ({
 vi.mock('../lib/ai-config', () => ({
   loadAIKey: vi.fn().mockResolvedValue(''),
   isAIKeyRequired: vi.fn().mockReturnValue(false),
+  isMobileCompanionConfigured: vi.fn().mockResolvedValue(false),
+  loadMobileCompanionConfig: vi.fn().mockResolvedValue({ baseUrl: '', token: '', enabled: false }),
   buildAIConfig: vi.fn().mockReturnValue({}),
 }));
 

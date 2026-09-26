@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppData, TimeEstimate } from '@mindwtr/core';
-import { createAIProvider } from '@mindwtr/core';
 import type { AIProviderId } from '@mindwtr/core';
 import type { TaskDraft, TaskDraftSetter } from '@mindwtr/core/task-draft';
 import { buildCopilotConfig, isAIKeyRequired, loadAIKey } from '../../lib/ai-config';
+import { createMobileAIProvider } from '../../lib/mobile-ai-provider';
+import { useMobileCompanionConfigured } from '../../lib/use-mobile-companion';
 import { logError } from '../../lib/app-log';
 
 type CopilotSuggestion = {
@@ -44,6 +45,7 @@ export function useTaskEditCopilot({
 }: UseTaskEditCopilotArgs) {
     const [aiKey, setAiKey] = useState('');
     const keyRequired = isAIKeyRequired(settings);
+    const companionConfigured = useMobileCompanionConfigured();
     const [copilotSuggestion, setCopilotSuggestion] = useState<CopilotSuggestion | null>(null);
     const [copilotContext, setCopilotContext] = useState<string | undefined>(undefined);
     const [copilotEstimate, setCopilotEstimate] = useState<TimeEstimate | undefined>(undefined);
@@ -80,7 +82,7 @@ export function useTaskEditCopilot({
     }, [contextOptions, tagOptions]);
 
     useEffect(() => {
-        if (!aiEnabled || (keyRequired && !aiKey)) {
+        if (!aiEnabled || (keyRequired && !aiKey && !companionConfigured)) {
             setCopilotSuggestion(null);
             return;
         }
@@ -104,7 +106,7 @@ export function useTaskEditCopilot({
                 previousController.abort();
             }
             try {
-                const provider = createAIProvider(buildCopilotConfig(settings, aiKey));
+                const provider = await createMobileAIProvider(buildCopilotConfig(settings, aiKey));
                 const suggestion = await provider.predictMetadata(
                     { title: input, contexts: contextOptionsRef.current, tags: tagOptionsRef.current },
                     abortController ? { signal: abortController.signal } : undefined
@@ -127,7 +129,7 @@ export function useTaskEditCopilot({
                 copilotAbortRef.current = null;
             }
         };
-    }, [aiEnabled, aiKey, descriptionDraft, keyRequired, settings, timeEstimatesEnabled, titleDraft]);
+    }, [aiEnabled, aiKey, companionConfigured, descriptionDraft, keyRequired, settings, timeEstimatesEnabled, titleDraft]);
 
     useEffect(() => {
         if (!visible) {

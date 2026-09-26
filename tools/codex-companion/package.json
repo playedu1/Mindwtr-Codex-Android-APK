@@ -1,0 +1,15 @@
+{
+  "name": "@mindwtr/codex-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Loopback companion service for Mindwtr AI operations through the local Codex CLI.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "^0.157.1"
+  }
+}

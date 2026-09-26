@@ -21,7 +21,6 @@ import {
   prepareCaptureTask,
   buildQuickAddParseOptions,
   buildQuickAddPreviewEntries,
-  createAIProvider,
   getUsedTaskTokens,
   isSandboxMode,
   isSelectableProjectForTaskAssignment,
@@ -47,6 +46,8 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useToast } from '@/contexts/toast-context';
 import { useLanguage } from '../contexts/language-context';
 import { buildCopilotConfig, isAIKeyRequired, loadAIKey } from '../lib/ai-config';
+import { createMobileAIProvider } from '../lib/mobile-ai-provider';
+import { useMobileCompanionConfigured } from '../lib/use-mobile-companion';
 import { logError, logInfo } from '../lib/app-log';
 import { logIosShareDiagnostic } from '../lib/share-intent-diagnostics';
 import { addHardwareBackPressListener, returnToPreviousApp } from '@/lib/hardware-back';
@@ -308,6 +309,7 @@ export default function CaptureScreen() {
   const aiEnabled = settings.ai?.enabled === true;
   const aiProvider = (settings.ai?.provider ?? 'openai') as AIProviderId;
   const keyRequired = isAIKeyRequired(settings);
+  const companionConfigured = useMobileCompanionConfigured();
   const { priorities: prioritiesEnabled, timeEstimates: timeEstimatesEnabled } = resolveFeatureFlags(settings);
 
   useEffect(() => {
@@ -344,7 +346,7 @@ export default function CaptureScreen() {
   }, [areas, projects, quickAddParseOptions, t, value]);
 
   useEffect(() => {
-    if (!aiEnabled || (keyRequired && !aiKey)) {
+    if (!aiEnabled || (keyRequired && !aiKey && !companionConfigured)) {
       setCopilotSuggestion(null);
       return;
     }
@@ -359,7 +361,7 @@ export default function CaptureScreen() {
         if (copilotAbortRef.current) copilotAbortRef.current.abort();
         const abortController = typeof AbortController === 'function' ? new AbortController() : null;
         copilotAbortRef.current = abortController;
-        const provider = createAIProvider(buildCopilotConfig(settings, aiKey));
+        const provider = await createMobileAIProvider(buildCopilotConfig(settings, aiKey));
         const suggestion = await provider.predictMetadata(
           { title, contexts: contextOptions, tags: tagOptions },
           abortController ? { signal: abortController.signal } : undefined
@@ -389,6 +391,7 @@ export default function CaptureScreen() {
   }, [
     aiEnabled,
     aiKey,
+    companionConfigured,
     aiProvider,
     contextOptions,
     keyRequired,

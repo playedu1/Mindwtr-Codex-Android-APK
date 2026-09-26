@@ -12,6 +12,48 @@ import {
     setSessionSecret,
 } from './secure-secret-store';
 
+const MOBILE_COMPANION_URL_KEY = 'mindwtr-codex-companion-url';
+const MOBILE_COMPANION_TOKEN_KEY = 'mindwtr-codex-companion-token';
+const MOBILE_COMPANION_ENABLED_KEY = 'mindwtr-codex-companion-enabled';
+
+export type MobileCompanionConfig = { baseUrl: string; token: string; enabled: boolean };
+
+export async function loadMobileCompanionConfig(): Promise<MobileCompanionConfig> {
+    const baseUrl = (await AsyncStorage.getItem(MOBILE_COMPANION_URL_KEY))?.trim().replace(/\/+$/, '') ?? '';
+    let token = '';
+    if (await isSecureStoreAvailable()) {
+        token = (await SecureStore.getItemAsync(MOBILE_COMPANION_TOKEN_KEY)) ?? '';
+    } else {
+        token = getSessionSecret(MOBILE_COMPANION_TOKEN_KEY) ?? '';
+    }
+    const enabled = (await AsyncStorage.getItem(MOBILE_COMPANION_ENABLED_KEY)) === 'true';
+    return { baseUrl, token, enabled };
+}
+
+export async function saveMobileCompanionConfig(config: MobileCompanionConfig): Promise<void> {
+    const baseUrl = config.baseUrl.trim().replace(/\/+$/, '');
+    const token = config.token.trim();
+    if (baseUrl) await AsyncStorage.setItem(MOBILE_COMPANION_URL_KEY, baseUrl);
+    else await AsyncStorage.removeItem(MOBILE_COMPANION_URL_KEY);
+    await AsyncStorage.setItem(MOBILE_COMPANION_ENABLED_KEY, config.enabled ? 'true' : 'false');
+    if (await isSecureStoreAvailable()) {
+        if (token) await SecureStore.setItemAsync(MOBILE_COMPANION_TOKEN_KEY, token, {
+            keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        });
+        else await SecureStore.deleteItemAsync(MOBILE_COMPANION_TOKEN_KEY);
+        deleteSessionSecret(MOBILE_COMPANION_TOKEN_KEY);
+    } else if (token) {
+        setSessionSecret(MOBILE_COMPANION_TOKEN_KEY, token);
+    } else {
+        deleteSessionSecret(MOBILE_COMPANION_TOKEN_KEY);
+    }
+}
+
+export async function isMobileCompanionConfigured(): Promise<boolean> {
+    const config = await loadMobileCompanionConfig();
+    return Boolean(config.enabled && config.baseUrl && config.token);
+}
+
 const getSecureKey = (provider: AIProviderId) => {
     return getAIKeyStorageKey(provider).replace(/[^A-Za-z0-9._-]/g, '_');
 };

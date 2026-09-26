@@ -6,7 +6,6 @@ import {
     Task,
     TaskStatus,
     TimeEstimate,
-    createAIProvider,
     createTaskCancellationUndo,
     generateUUID,
     type AIProviderId,
@@ -17,7 +16,8 @@ import {
 } from '@mindwtr/core';
 
 import type { AIResponseAction } from '../ai-response-modal';
-import { buildAIConfig, isAIKeyRequired, loadAIKey } from '../../lib/ai-config';
+import { buildAIConfig, isAIKeyRequired, isMobileCompanionConfigured, loadAIKey } from '../../lib/ai-config';
+import { createMobileAIProvider } from '../../lib/mobile-ai-provider';
 import { logTaskError, logTaskWarn } from './task-edit-modal.utils';
 import { openProjectScreen, openTaskScreen } from '../../lib/task-meta-navigation';
 import { settleStoreAction } from '../store-action-result';
@@ -437,11 +437,12 @@ export function useTaskEditActions({
         }
         const provider = (settings.ai?.provider ?? 'openai') as AIProviderId;
         const apiKey = await loadAIKey(provider);
-        if (isAIKeyRequired(settings) && !apiKey) {
+        const companionConfigured = await isMobileCompanionConfigured();
+        if (isAIKeyRequired(settings) && !apiKey && !companionConfigured) {
             Alert.alert(t('ai.missingKeyTitle'), t('ai.missingKeyBody'));
             return null;
         }
-        return createAIProvider(buildAIConfig(settings, apiKey));
+        return createMobileAIProvider(buildAIConfig(settings, apiKey));
     }, [aiEnabled, settings, t]);
 
     const applyAISuggestion = useCallback((suggested: { title?: string; context?: string; timeEstimate?: TimeEstimate }) => {

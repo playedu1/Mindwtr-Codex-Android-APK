@@ -17,7 +17,6 @@ import {
   commitProcessInboxDecision,
   createProcessInboxSession,
   createProcessInboxTitleParser,
-  createAIProvider,
   createTaskSimilarityIndex,
   formatAIErrorAlertBody,
   formatProcessInboxProgressLabel,
@@ -72,7 +71,8 @@ import { useTheme } from '../../contexts/theme-context';
 import { useToast } from '../../contexts/toast-context';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useVisibleTaskContext } from '@/hooks/use-visible-tasks';
-import { buildAIConfig, isAIKeyRequired, loadAIKey } from '../../lib/ai-config';
+import { buildAIConfig, isAIKeyRequired, isMobileCompanionConfigured, loadAIKey } from '../../lib/ai-config';
+import { createMobileAIProvider } from '../../lib/mobile-ai-provider';
 import { logWarn } from '../../lib/app-log';
 import { readAppleClarificationBackend } from '../../lib/apple-clarification-preference';
 import {
@@ -1075,7 +1075,8 @@ export function useInboxProcessingController({
       return;
     }
     const apiKey = await loadAIKey(aiProvider);
-    if (isAIKeyRequired(settings) && !apiKey) {
+    const companionConfigured = await isMobileCompanionConfigured();
+    if (isAIKeyRequired(settings) && !apiKey && !companionConfigured) {
       showToast({
         title: t('ai.errorTitle'),
         message: t('ai.missingKeyBody'),
@@ -1090,7 +1091,7 @@ export function useInboxProcessingController({
     }
     setIsAIWorking(true);
     try {
-      const provider = createAIProvider(buildAIConfig(settings ?? {}, apiKey));
+      const provider = await createMobileAIProvider(buildAIConfig(settings ?? {}, apiKey));
       const contextOptions = Array.from(new Set([
         ...contextSuggestionPool,
         ...selectedContexts,

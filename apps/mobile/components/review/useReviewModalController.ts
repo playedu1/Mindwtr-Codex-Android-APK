@@ -5,7 +5,6 @@ import {
     WEEKLY_REVIEW_SESSION_STORAGE_KEY,
     buildReviewSteps,
     buildReviewSuggestionUpdates,
-    createAIProvider,
     filterReviewSuggestions,
     getExternalCalendarDaySummaries,
     getReviewCalendarRange,
@@ -49,7 +48,8 @@ import { useLanguage } from '../../contexts/language-context';
 import { useQuickCapture } from '../../contexts/quick-capture-context';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { openContextsScreen, openProjectScreen } from '@/lib/task-meta-navigation';
-import { buildAIConfig, isAIKeyRequired, loadAIKey } from '../../lib/ai-config';
+import { buildAIConfig, isAIKeyRequired, isMobileCompanionConfigured, loadAIKey } from '../../lib/ai-config';
+import { createMobileAIProvider } from '../../lib/mobile-ai-provider';
 import { logError } from '../../lib/app-log';
 import { fetchExternalCalendarEvents } from '../../lib/external-calendar';
 import { maybeRequestStoreReviewAfterPositiveMoment } from '../../lib/store-review-prompt';
@@ -346,7 +346,8 @@ export function useReviewModalController({
             return;
         }
         const apiKey = await loadAIKey(aiProvider);
-        if (isAIKeyRequired(settings) && !apiKey) {
+        const companionConfigured = await isMobileCompanionConfigured();
+        if (isAIKeyRequired(settings) && !apiKey && !companionConfigured) {
             setAiError('Missing API key. Add it in Settings.');
             return;
         }
@@ -357,7 +358,7 @@ export function useReviewModalController({
         }
         setAiLoading(true);
         try {
-            const provider = createAIProvider(buildAIConfig(settings, apiKey));
+            const provider = await createMobileAIProvider(buildAIConfig(settings, apiKey));
             const response = await provider.analyzeReview({ items: staleItems });
             // Filter here, not in the apply path, so what is displayed and what
             // can be written never diverge.

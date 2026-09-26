@@ -1,0 +1,76 @@
+name: Mindwtr Codex Android APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  NODE_OPTIONS: --max-old-space-size=3072
+  APP_VARIANT: development
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        run: bash scripts/ci/setup-android-sdk.sh
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .bun-version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate native project
+        working-directory: apps/mobile
+        run: npx expo prebuild --clean --platform android --no-install
+
+      - name: Limit memory for the personal APK
+        working-directory: apps/mobile/android
+        run: |
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=384m/' gradle.properties
+          sed -i 's/^org.gradle.parallel=true/org.gradle.parallel=false/' gradle.properties
+          sed -i 's/^android.enableMinifyInReleaseBuilds=true/android.enableMinifyInReleaseBuilds=false/' gradle.properties
+          sed -i 's/^android.enableShrinkResourcesInReleaseBuilds=true/android.enableShrinkResourcesInReleaseBuilds=false/' gradle.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/build.gradle')
+          content = path.read_text()
+          marker = '    bundleCommand = "export:embed"'
+          if marker not in content:
+              raise SystemExit('Expo bundle command not found')
+          path.write_text(content.replace(marker, marker + '\n    extraPackagerArgs = ["--max-workers", "2"]', 1))
+          PY
+
+      - name: Build bundled APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon --max-workers=2
+
+      - name: Upload APK
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: mindwtr-codex-android-arm64
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14

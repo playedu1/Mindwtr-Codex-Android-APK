@@ -40,6 +40,8 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 vi.mock('@/lib/ai-config', () => ({
     loadAIKey: aiConfigMocks.loadAIKey,
     saveAIKey: aiConfigMocks.saveAIKey,
+    loadMobileCompanionConfig: vi.fn().mockResolvedValue({ baseUrl: '', token: '', enabled: false }),
+    saveMobileCompanionConfig: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/whisper-model-store', () => ({
@@ -53,6 +55,10 @@ vi.mock('@/lib/whisper-model-store', () => ({
 vi.mock('@/contexts/toast-context', () => ({
     ToastViewport: () => null,
     useToast: () => ({ dismissToast: vi.fn(), showToast: vi.fn() }),
+}));
+
+vi.mock('@/contexts/language-context', () => ({
+    useLanguage: () => ({ language: 'en' }),
 }));
 
 vi.mock('@/hooks/use-theme-colors', () => ({

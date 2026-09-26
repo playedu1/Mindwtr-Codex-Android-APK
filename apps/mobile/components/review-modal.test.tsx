@@ -208,6 +208,8 @@ vi.mock('@/lib/task-meta-navigation', () => ({
 vi.mock('../lib/ai-config', () => ({
     buildAIConfig: vi.fn(() => ({})),
     isAIKeyRequired: vi.fn(() => false),
+    isMobileCompanionConfigured: vi.fn().mockResolvedValue(false),
+    loadMobileCompanionConfig: vi.fn().mockResolvedValue({ baseUrl: '', token: '', enabled: false }),
     loadAIKey: vi.fn().mockResolvedValue(''),
 }));
 

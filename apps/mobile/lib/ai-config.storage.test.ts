@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildAIConfig, buildCopilotConfig, loadAIKey, saveAIKey } from './ai-config';
+import { buildAIConfig, buildCopilotConfig, loadAIKey, loadMobileCompanionConfig, saveAIKey, saveMobileCompanionConfig } from './ai-config';
 import { __resetSecureSecretStoreForTests } from './secure-secret-store';
 
 const logInfoMock = vi.hoisted(() => vi.fn().mockResolvedValue(null));
@@ -121,6 +121,18 @@ describe('AI credential storage', () => {
         expect(storeMocks.setItem).not.toHaveBeenCalled();
         expect(storeMocks.secureItems.has('mindwtr-ai-key_openai')).toBe(false);
         await expect(loadAIKey('openai')).resolves.toBe('session-ai-key');
+    });
+
+    it('stores the companion URL and enabled flag in preferences while keeping the bearer token in secure storage', async () => {
+        await saveMobileCompanionConfig({ baseUrl: 'https://host.example/', token: 'companion-secret', enabled: true });
+
+        expect(storeMocks.asyncItems.get('mindwtr-codex-companion-url')).toBe('https://host.example');
+        expect(storeMocks.asyncItems.get('mindwtr-codex-companion-enabled')).toBe('true');
+        expect(storeMocks.asyncItems.has('mindwtr-codex-companion-token')).toBe(false);
+        expect(storeMocks.secureItems.get('mindwtr-codex-companion-token')).toBe('companion-secret');
+        await expect(loadMobileCompanionConfig()).resolves.toEqual({
+            baseUrl: 'https://host.example', token: 'companion-secret', enabled: true,
+        });
     });
 
     it('evacuates a legacy plaintext key into memory when secure storage is unsupported', async () => {

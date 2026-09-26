@@ -91,6 +91,8 @@ vi.mock('@/lib/task-meta-navigation', () => ({ openContextsScreen: vi.fn(), open
 vi.mock('../lib/ai-config', () => ({
   buildAIConfig: () => ({}),
   isAIKeyRequired: () => false,
+  isMobileCompanionConfigured: async () => false,
+  loadMobileCompanionConfig: async () => ({ baseUrl: '', token: '', enabled: false }),
   loadAIKey: async () => 'key',
 }));
 vi.mock('../lib/app-log', () => ({ logError: vi.fn(), logInfo: vi.fn(), logWarn: vi.fn() }));

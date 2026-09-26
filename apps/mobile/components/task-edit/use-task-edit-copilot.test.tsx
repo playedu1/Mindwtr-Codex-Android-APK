@@ -15,6 +15,8 @@ vi.mock('@mindwtr/core', () => ({
 vi.mock('../../lib/ai-config', () => ({
   buildCopilotConfig: () => ({}),
   isAIKeyRequired: () => false,
+  isMobileCompanionConfigured: async () => false,
+  loadMobileCompanionConfig: async () => ({ baseUrl: '', token: '', enabled: false }),
   loadAIKey: async () => 'test-key',
 }));
 

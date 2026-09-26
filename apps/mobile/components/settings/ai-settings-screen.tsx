@@ -44,6 +44,7 @@ import type { WhisperModelLocation } from '@/lib/whisper-model-store';
 
 import { AiSettingsAssistantCard } from './ai-settings-assistant-card';
 import { AiSettingsSpeechCard } from './ai-settings-speech-card';
+import { MobileCompanionSettings } from './mobile-companion-settings';
 import { isWhisperModelFileReady } from './ai-settings-whisper-model';
 import {
     AI_PROVIDER_CONSENT_KEY,
@@ -632,6 +633,8 @@ export function AISettingsScreen() {
                         t={t}
                         tc={tc}
                     />
+
+                    <MobileCompanionSettings tc={tc} />
 
                     <AiSettingsSpeechCard
                         isExpoGo={isExpoGo}
